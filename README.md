@@ -112,7 +112,9 @@ Edit `$CLAUDE_CONFIG_DIR/hooks/peon-ping/config.json` (default: `~/.claude/hooks
 | `sc_medic` | Medic (StarCraft) | "The doctor is in", "Where does it hurt?", "All patched up!" | [@workdd](https://github.com/workdd) |
 | `sc_tank` | Siege Tank (StarCraft) | "Ready to roll out", "Absolutely", "Done and done" | [@workdd](https://github.com/workdd) |
 | `sc_vessel` | Science Vessel (StarCraft) | "Explorer reporting", "Receiving", "Affirmative" | [@workdd](https://github.com/workdd) |
+| `aoe2` | Taunts (Age of Empires II) | "Wololo", "All hail king of the losers", "Nice town, I'll take it" | [@halilb](https://github.com/halilb) |
 | `aom_greek` | Greek Villager (Age of Mythology) | "Prostagma?", "Etoimon", "Malista" | [@amitaifrey](https://github.com/amitaifrey) |
+| `brewmaster_ru` | Pandaren Brewmaster (Warcraft III, Russian) | "Без проблем", "За Пандарию!", "Пиво для сил?" | [@rubywwwilde](https://github.com/rubywwwilde) |
 | `wc2_peasant` | Human Peasant (Warcraft II) | "Ready to serve.", "Job's done.", "Right-o." | [@sebbeth](https://github.com/sebbeth) |
 
 Switch packs from the CLI:

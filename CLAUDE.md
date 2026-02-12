@@ -21,6 +21,9 @@ bats tests/peon.bats -f "plays session.start sound"
 
 # Install locally for development
 bash install.sh --local
+
+# Install only specific packs
+bash install.sh --packs=peon,glados,peasant
 ```
 
 There is no build step, linter, or formatter configured for the shell codebase.
@@ -53,7 +56,7 @@ Claude Code triggers hook → `peon.sh` reads JSON stdin → single Python call 
 
 ### Pack Format
 
-Packs use `manifest.json` or `openpeon.json` (CESP standard) with categories mapping to arrays of `{ "file": "sound.wav", "label": "text" }` entries. Packs are downloaded from a registry and stored under `packs/`.
+Packs use `openpeon.json` (CESP standard) with categories mapping to arrays of `{ "file": "sound.wav", "label": "text" }` entries. Packs are downloaded from the [OpenPeon registry](https://github.com/PeonPing/registry) at install time into `~/.peon-ping/packs/`.
 
 ## Testing
 

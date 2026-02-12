@@ -28,14 +28,16 @@ Local installs don't add the `peon` CLI alias or shell completions — use `/peo
 
 ## What you'll hear
 
-| Event | Sound | Examples |
+| Event | CESP Category | Examples |
 |---|---|---|
-| Session starts | Greeting | *"Ready to work?"*, *"Yes?"*, *"What you want?"* |
-| Task finishes | Acknowledgment | *"Work, work."*, *"I can do that."*, *"Okie dokie."* |
-| Permission needed | Alert | *"Something need doing?"*, *"Hmm?"*, *"What you want?"* |
-| Rapid prompts (3+ in 10s) | Easter egg | *"Me busy, leave me alone!"* |
+| Session starts | `session.start` | *"Ready to work?"*, *"Yes?"*, *"What you want?"* |
+| Task finishes | `task.complete` | *"Work, work."*, *"I can do that."*, *"Okie dokie."* |
+| Permission needed | `input.required` | *"Something need doing?"*, *"Hmm?"*, *"What you want?"* |
+| Rapid prompts (3+ in 10s) | `user.spam` | *"Me busy, leave me alone!"* |
 
 Plus Terminal tab titles (`● project: done`) and desktop notifications when your terminal isn't focused.
+
+peon-ping implements the [Coding Event Sound Pack Specification (CESP)](https://github.com/PeonPing/openpeon) — an open standard for coding event sounds that any agentic IDE can adopt.
 
 ## Quick controls
 
@@ -73,21 +75,32 @@ The config lives at `$CLAUDE_CONFIG_DIR/hooks/peon-ping/config.json` (default: `
 {
   "volume": 0.5,
   "categories": {
-    "greeting": true,
-    "acknowledge": true,
-    "complete": true,
-    "error": true,
-    "permission": true,
-    "annoyed": true
+    "session.start": true,
+    "task.acknowledge": true,
+    "task.complete": true,
+    "task.error": true,
+    "input.required": true,
+    "resource.limit": true,
+    "user.spam": true
   }
 }
 ```
 
 - **volume**: 0.0–1.0 (quiet enough for the office)
 - **desktop_notifications**: `true`/`false` — toggle desktop notification popups independently from sounds (default: `true`)
-- **categories**: Toggle individual sound types on/off
-- **annoyed_threshold / annoyed_window_seconds**: How many prompts in N seconds triggers the easter egg
-- **pack_rotation**: Array of pack names (e.g. `["peon", "sc_kerrigan", "peasant"]`). Each Claude Code session randomly gets one pack from the list and keeps it for the whole session. Leave empty `[]` to use `active_pack` instead.
+- **categories**: Toggle individual CESP sound categories on/off (e.g. `"session.start": false` to disable greeting sounds)
+- **annoyed_threshold / annoyed_window_seconds**: How many prompts in N seconds triggers the `user.spam` easter egg
+- **pack_rotation**: Array of pack names (e.g. `["peon", "sc_kerrigan", "peasant"]`). Each session randomly gets one pack from the list and keeps it for the whole session. Leave empty `[]` to use `active_pack` instead.
+
+## Multi-IDE Support
+
+peon-ping works with any agentic IDE that supports hooks. Adapters translate IDE-specific events to the [CESP standard](https://github.com/PeonPing/openpeon).
+
+| IDE | Status | Setup |
+|---|---|---|
+| **Claude Code** | Built-in | `curl \| bash` install handles everything |
+| **OpenAI Codex** | Adapter | Add `command = "bash ~/.claude/hooks/peon-ping/adapters/codex.sh"` to `~/.codex/config.toml` under `[notify]` |
+| **Cursor** | Adapter | Add hook entries to `~/.cursor/hooks.json` pointing to `adapters/cursor.sh` |
 
 ## Sound packs
 

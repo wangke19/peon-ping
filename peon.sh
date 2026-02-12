@@ -327,12 +327,16 @@ try:
 except:
     active = 'peon'
 packs_dir = '$PEON_DIR/packs'
-for m in sorted(glob.glob(os.path.join(packs_dir, '*/manifest.json'))):
-    info = json.load(open(m))
-    name = info.get('name', os.path.basename(os.path.dirname(m)))
-    display = info.get('display_name', name)
-    marker = ' *' if name == active else ''
-    print(f'  {name:24s} {display}{marker}')
+for d in sorted(os.listdir(packs_dir)):
+    for mname in ('openpeon.json', 'manifest.json'):
+        mpath = os.path.join(packs_dir, d, mname)
+        if os.path.exists(mpath):
+            info = json.load(open(mpath))
+            name = info.get('name', d)
+            display = info.get('display_name', name)
+            marker = ' *' if name == active else ''
+            print(f'  {name:24s} {display}{marker}')
+            break
 "
     exit 0 ;;
   --pack)
@@ -349,8 +353,11 @@ except:
 active = cfg.get('active_pack', 'peon')
 packs_dir = '$PEON_DIR/packs'
 names = sorted([
-    os.path.basename(os.path.dirname(m))
-    for m in glob.glob(os.path.join(packs_dir, '*/manifest.json'))
+    d for d in os.listdir(packs_dir)
+    if os.path.isdir(os.path.join(packs_dir, d)) and (
+        os.path.exists(os.path.join(packs_dir, d, 'openpeon.json')) or
+        os.path.exists(os.path.join(packs_dir, d, 'manifest.json'))
+    )
 ])
 if not names:
     print('Error: no packs found', flush=True)
@@ -363,8 +370,11 @@ except ValueError:
 cfg['active_pack'] = next_pack
 json.dump(cfg, open(config_path, 'w'), indent=2)
 # Read display name
-mpath = os.path.join(packs_dir, next_pack, 'manifest.json')
-display = json.load(open(mpath)).get('display_name', next_pack)
+for mname in ('openpeon.json', 'manifest.json'):
+    mpath = os.path.join(packs_dir, next_pack, mname)
+    if os.path.exists(mpath):
+        display = json.load(open(mpath)).get('display_name', next_pack)
+        break
 print(f'peon-ping: switched to {next_pack} ({display})')
 "
     else
@@ -375,8 +385,11 @@ config_path = '$CONFIG'
 pack_arg = '$PACK_ARG'
 packs_dir = '$PEON_DIR/packs'
 names = sorted([
-    os.path.basename(os.path.dirname(m))
-    for m in glob.glob(os.path.join(packs_dir, '*/manifest.json'))
+    d for d in os.listdir(packs_dir)
+    if os.path.isdir(os.path.join(packs_dir, d)) and (
+        os.path.exists(os.path.join(packs_dir, d, 'openpeon.json')) or
+        os.path.exists(os.path.join(packs_dir, d, 'manifest.json'))
+    )
 ])
 if pack_arg not in names:
     print(f'Error: pack \"{pack_arg}\" not found.', file=sys.stderr)
@@ -388,8 +401,12 @@ except:
     cfg = {}
 cfg['active_pack'] = pack_arg
 json.dump(cfg, open(config_path, 'w'), indent=2)
-mpath = os.path.join(packs_dir, pack_arg, 'manifest.json')
-display = json.load(open(mpath)).get('display_name', pack_arg)
+display = pack_arg
+for mname in ('openpeon.json', 'manifest.json'):
+    mpath = os.path.join(packs_dir, pack_arg, mname)
+    if os.path.exists(mpath):
+        display = json.load(open(mpath)).get('display_name', pack_arg)
+        break
 print(f'peon-ping: switched to {pack_arg} ({display})')
 " || exit 1
     fi
@@ -456,7 +473,7 @@ annoyed_threshold = int(cfg.get('annoyed_threshold', 3))
 annoyed_window = float(cfg.get('annoyed_window_seconds', 10))
 cats = cfg.get('categories', {})
 cat_enabled = {}
-for c in ['greeting','acknowledge','complete','error','permission','resource_limit','annoyed']:
+for c in ['session.start','task.acknowledge','task.complete','task.error','input.required','resource.limit','user.spam']:
     cat_enabled[c] = str(cats.get(c, True)).lower() == 'true'
 
 # --- Parse event JSON from stdin ---
@@ -519,11 +536,11 @@ notify_color = ''
 msg = ''
 
 if event == 'SessionStart':
-    category = 'greeting'
+    category = 'session.start'
     status = 'ready'
 elif event == 'UserPromptSubmit':
     status = 'working'
-    if cat_enabled.get('annoyed', True):
+    if cat_enabled.get('user.spam', True):
         all_ts = state.get('prompt_timestamps', {})
         if isinstance(all_ts, list):
             all_ts = {}
@@ -534,9 +551,9 @@ elif event == 'UserPromptSubmit':
         state['prompt_timestamps'] = all_ts
         state_dirty = True
         if len(ts) >= annoyed_threshold:
-            category = 'annoyed'
+            category = 'user.spam'
 elif event == 'Stop':
-    category = 'complete'
+    category = 'task.complete'
     status = 'done'
     marker = '\u25cf '
     notify = '1'
@@ -544,7 +561,7 @@ elif event == 'Stop':
     msg = project + '  \u2014  Task complete'
 elif event == 'Notification':
     if ntype == 'permission_prompt':
-        category = 'permission'
+        category = 'input.required'
         status = 'needs approval'
         marker = '\u25cf '
         notify = '1'
@@ -560,7 +577,7 @@ elif event == 'Notification':
         print('PEON_EXIT=true')
         sys.exit(0)
 elif event == 'PermissionRequest':
-    category = 'permission'
+    category = 'input.required'
     status = 'needs approval'
     marker = '\u25cf '
     notify = '1'
@@ -590,7 +607,14 @@ sound_file = ''
 if category and not paused:
     pack_dir = os.path.join(peon_dir, 'packs', active_pack)
     try:
-        manifest = json.load(open(os.path.join(pack_dir, 'manifest.json')))
+        manifest = None
+        for mname in ('openpeon.json', 'manifest.json'):
+            mpath = os.path.join(pack_dir, mname)
+            if os.path.exists(mpath):
+                manifest = json.load(open(mpath))
+                break
+        if not manifest:
+            manifest = {}
         sounds = manifest.get('categories', {}).get(category, {}).get('sounds', [])
         if sounds:
             last_played = state.get('last_played', {})
@@ -600,7 +624,11 @@ if category and not paused:
             last_played[category] = pick['file']
             state['last_played'] = last_played
             state_dirty = True
-            sound_file = os.path.join(pack_dir, 'sounds', pick['file'])
+            file_ref = pick['file']
+            if '/' in file_ref:
+                sound_file = os.path.join(pack_dir, file_ref)
+            else:
+                sound_file = os.path.join(pack_dir, 'sounds', file_ref)
     except:
         pass
 

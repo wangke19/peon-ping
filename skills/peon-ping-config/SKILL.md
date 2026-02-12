@@ -19,9 +19,9 @@ The config file is at `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/peon-ping/confi
 - **enabled** (boolean): Master on/off switch
 - **pack_rotation** (array of strings): List of packs to rotate through per session. Empty `[]` uses `active_pack` only.
 - **pack_rotation_mode** (string): `"random"` (default) picks a random pack each session. `"round-robin"` cycles through in order.
-- **categories** (object): Toggle individual sound types:
-  - `greeting`, `acknowledge`, `complete`, `error`, `permission`, `resource_limit`, `annoyed` — each a boolean
-- **annoyed_threshold** (number): How many rapid prompts trigger annoyed sounds
+- **categories** (object): Toggle individual CESP sound categories:
+  - `session.start`, `task.acknowledge`, `task.complete`, `task.error`, `input.required`, `resource.limit`, `user.spam` — each a boolean
+- **annoyed_threshold** (number): How many rapid prompts trigger user.spam sounds
 - **annoyed_window_seconds** (number): Time window for the annoyed threshold
 
 ## How to update

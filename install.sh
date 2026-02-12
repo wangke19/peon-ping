@@ -130,6 +130,10 @@ if [ -n "$SCRIPT_DIR" ]; then
   cp "$SCRIPT_DIR/completions.fish" "$INSTALL_DIR/"
   cp "$SCRIPT_DIR/VERSION" "$INSTALL_DIR/"
   cp "$SCRIPT_DIR/uninstall.sh" "$INSTALL_DIR/"
+  if [ -d "$SCRIPT_DIR/adapters" ]; then
+    mkdir -p "$INSTALL_DIR/adapters"
+    cp "$SCRIPT_DIR/adapters/"*.sh "$INSTALL_DIR/adapters/" 2>/dev/null || true
+  fi
   if [ "$UPDATING" = false ]; then
     cp "$SCRIPT_DIR/config.json" "$INSTALL_DIR/"
   fi
@@ -141,23 +145,36 @@ else
   curl -fsSL "$REPO_BASE/completions.fish" -o "$INSTALL_DIR/completions.fish"
   curl -fsSL "$REPO_BASE/VERSION" -o "$INSTALL_DIR/VERSION"
   curl -fsSL "$REPO_BASE/uninstall.sh" -o "$INSTALL_DIR/uninstall.sh"
+  mkdir -p "$INSTALL_DIR/adapters"
+  curl -fsSL "$REPO_BASE/adapters/codex.sh" -o "$INSTALL_DIR/adapters/codex.sh" 2>/dev/null || true
+  curl -fsSL "$REPO_BASE/adapters/cursor.sh" -o "$INSTALL_DIR/adapters/cursor.sh" 2>/dev/null || true
   for pack in $PACKS; do
-    curl -fsSL "$REPO_BASE/packs/$pack/manifest.json" -o "$INSTALL_DIR/packs/$pack/manifest.json"
+    # Try openpeon.json first, fall back to manifest.json
+    if ! curl -fsSL "$REPO_BASE/packs/$pack/openpeon.json" -o "$INSTALL_DIR/packs/$pack/openpeon.json" 2>/dev/null; then
+      curl -fsSL "$REPO_BASE/packs/$pack/manifest.json" -o "$INSTALL_DIR/packs/$pack/manifest.json" 2>/dev/null || true
+    fi
   done
   # Download sound files for each pack
   for pack in $PACKS; do
-    manifest="$INSTALL_DIR/packs/$pack/manifest.json"
+    # Find the manifest (prefer openpeon.json)
+    manifest="$INSTALL_DIR/packs/$pack/openpeon.json"
+    if [ ! -f "$manifest" ]; then
+      manifest="$INSTALL_DIR/packs/$pack/manifest.json"
+    fi
+    [ ! -f "$manifest" ] && continue
     # Extract sound filenames from manifest and download each one
     python3 -c "
-import json
+import json, os
 m = json.load(open('$manifest'))
 seen = set()
 for cat in m.get('categories', {}).values():
     for s in cat.get('sounds', []):
         f = s['file']
-        if f not in seen:
-            seen.add(f)
-            print(f)
+        # CESP format uses 'sounds/file.wav', extract just the filename
+        basename = os.path.basename(f)
+        if basename not in seen:
+            seen.add(basename)
+            print(basename)
 " | while read -r sfile; do
       if ! curl -fsSL "$REPO_BASE/packs/$pack/sounds/$sfile" -o "$INSTALL_DIR/packs/$pack/sounds/$sfile" </dev/null 2>/dev/null; then
         echo "  Warning: failed to download $pack/sounds/$sfile" >&2

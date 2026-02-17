@@ -1632,7 +1632,8 @@ _cursor_event_map = {
     'preToolUse': 'UserPromptSubmit',
     'postToolUse': 'Stop',
     'subagentStop': 'Stop',
-    'preCompact': 'Stop',
+    'subagentStart': 'SubagentStart',
+    'preCompact': 'PreCompact',
 }
 event = _cursor_event_map.get(raw_event, raw_event)
 
@@ -1859,6 +1860,10 @@ elif event == 'PostToolUseFailure':
     else:
         print('PEON_EXIT=true')
         sys.exit(0)
+elif event == 'SubagentStart':
+    if cat_enabled.get('task.acknowledge', False):
+        category = 'task.acknowledge'
+    status = 'working'
 elif event == 'PreCompact':
     # Context window filling up — compaction about to start
     category = 'resource.limit'

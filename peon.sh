@@ -2014,8 +2014,10 @@ elif pack_rotation and rotation_mode in ('random', 'round-robin'):
     # Automatic rotation — detect context resets (new session_id within seconds
     # of the last event, no Stop in between) and reuse the previous pack.
     session_packs = state.get('session_packs', {})
-    if session_id in session_packs and session_packs[session_id] in pack_rotation:
-        active_pack = session_packs[session_id]
+    _sp_entry = session_packs.get(session_id)
+    _sp_pack = _sp_entry.get('pack', '') if isinstance(_sp_entry, dict) else (_sp_entry or '')
+    if session_id in session_packs and _sp_pack in pack_rotation:
+        active_pack = _sp_pack
     else:
         inherited = False
         if event == 'SessionStart':
@@ -2028,6 +2030,12 @@ elif pack_rotation and rotation_mode in ('random', 'round-robin'):
             if session_source == 'resume' and la_pack in pack_rotation:
                 active_pack = la_pack
                 inherited = True
+            # Subagent inheritance: parent just spawned a subagent, use parent's pack
+            elif state.get('pending_subagent_pack') and (time.time() - state['pending_subagent_pack'].get('ts', 0) < 30):
+                parent_pack = state['pending_subagent_pack'].get('pack', '')
+                if parent_pack in pack_rotation:
+                    active_pack = parent_pack
+                    inherited = True
             # Context reset: recent activity from another session, no Stop/SessionEnd
             elif (la_sid and la_sid != session_id and la_pack in pack_rotation
                     and la_evt not in ('Stop', 'SessionEnd')
@@ -2148,9 +2156,13 @@ elif event == 'PostToolUseFailure':
         print('PEON_EXIT=true')
         sys.exit(0)
 elif event == 'SubagentStart':
-    if cat_enabled.get('task.acknowledge', False):
-        category = 'task.acknowledge'
-    status = 'working'
+    # Record parent's pack so spawned subagent sessions inherit it, then stay silent
+    state['pending_subagent_pack'] = dict(ts=time.time(), pack=active_pack)
+    state_dirty = True
+    os.makedirs(os.path.dirname(state_file) or '.', exist_ok=True)
+    json.dump(state, open(state_file, 'w'))
+    print('PEON_EXIT=true')
+    sys.exit(0)
 elif event == 'PreCompact':
     # Context window filling up — compaction about to start
     category = 'resource.limit'

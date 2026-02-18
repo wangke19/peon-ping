@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.4.1 (2026-02-18)
+
+### Fixed
+- Pack rotation: `session_packs` entries in dict format (after cleanup upgrade) were not recognized by the `in pack_rotation` check, causing a new random pack to be picked on every non-SessionStart event — same session could play sounds from different characters each turn
+- `SubagentStart` now exits silently after saving state — previously could play `task.acknowledge` sound on the parent session
+- Task-spawned subagent sessions now inherit the parent session's voice pack via `pending_subagent_pack` state, ensuring a single conversation always uses one character
+
 ## v2.4.0 (2026-02-18)
 
 ### Added

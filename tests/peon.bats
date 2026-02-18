@@ -1093,6 +1093,77 @@ JSON
   [[ "$sound2" == *"/packs/sc_kerrigan/sounds/"* ]]
 }
 
+@test "pack_rotation keeps same pack when session_packs entry is dict format" {
+  cat > "$TEST_DIR/config.json" <<'JSON'
+{
+  "active_pack": "peon", "volume": 0.5, "enabled": true,
+  "categories": {},
+  "pack_rotation": ["sc_kerrigan"]
+}
+JSON
+  # Inject state with dict-format entry (as cleanup code produces)
+  /usr/bin/python3 <<PYTHON
+import json, os, time
+state_file = os.environ['TEST_DIR'] + '/.state.json'
+state = json.load(open(state_file))
+state.setdefault('session_packs', {})['rot-dict'] = {'pack': 'sc_kerrigan', 'last_used': time.time()}
+json.dump(state, open(state_file, 'w'))
+PYTHON
+
+  # Subsequent event should reuse sc_kerrigan, not pick a random pack
+  run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"rot-dict","permission_mode":"default"}'
+  sound=$(afplay_sound)
+  [[ "$sound" == *"/packs/sc_kerrigan/sounds/"* ]]
+}
+
+@test "SubagentStart fires no sound and saves pending_subagent_pack" {
+  cat > "$TEST_DIR/config.json" <<'JSON'
+{
+  "active_pack": "peon", "volume": 0.5, "enabled": true,
+  "categories": {"task.acknowledge": true},
+  "pack_rotation": ["sc_kerrigan"]
+}
+JSON
+  run_peon '{"hook_event_name":"SessionStart","cwd":"/tmp/myproject","session_id":"par1","permission_mode":"default"}'
+  run_peon '{"hook_event_name":"subagentStart","cwd":"/tmp/myproject","session_id":"par1","permission_mode":"default"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  ! afplay_was_called
+
+  # pending_subagent_pack should be written to state
+  pending=$(/usr/bin/python3 -c "
+import json, os
+state = json.load(open(os.environ['TEST_DIR'] + '/.state.json'))
+p = state.get('pending_subagent_pack', {})
+print(p.get('pack', ''))
+")
+  [ "$pending" = "sc_kerrigan" ]
+}
+
+@test "child SessionStart inherits parent pack via pending_subagent_pack" {
+  cat > "$TEST_DIR/config.json" <<'JSON'
+{
+  "active_pack": "peon", "volume": 0.5, "enabled": true,
+  "categories": {},
+  "pack_rotation": ["sc_kerrigan", "peon"]
+}
+JSON
+  # Inject pending_subagent_pack as if parent just fired SubagentStart with sc_kerrigan
+  /usr/bin/python3 <<PYTHON
+import json, os, time
+state_file = os.environ['TEST_DIR'] + '/.state.json'
+state = json.load(open(state_file))
+state['pending_subagent_pack'] = {'ts': time.time(), 'pack': 'sc_kerrigan'}
+json.dump(state, open(state_file, 'w'))
+PYTHON
+
+  # Child session start should inherit sc_kerrigan, not pick random
+  run_peon '{"hook_event_name":"SessionStart","cwd":"/tmp/myproject","session_id":"child1","permission_mode":"default"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  afplay_was_called
+  sound=$(afplay_sound)
+  [[ "$sound" == *"/packs/sc_kerrigan/sounds/"* ]]
+}
+
 @test "empty pack_rotation falls back to active_pack" {
   cat > "$TEST_DIR/config.json" <<'JSON'
 {

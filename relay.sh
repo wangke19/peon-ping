@@ -388,7 +388,7 @@ def send_notification_on_host(title, message, color="red"):
         env["PEON_PLATFORM"] = HOST_PLATFORM
         env["PEON_NOTIF_STYLE"] = notif_style
         env["PEON_DIR"] = PEON_DIR
-        env["PEON_SYNC"] = "0"
+        env["PEON_SYNC"] = os.environ.get("PEON_TEST", "0")
         subprocess.Popen(
             ["bash", notify_script, message, title, color, icon_path],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,

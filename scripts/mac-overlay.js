@@ -15,7 +15,7 @@ function run(argv) {
   var slot     = parseInt(argv[3], 10) || 0;
   var dismiss  = parseFloat(argv[4]) || 4;
   var bundleId = argv[5] || '';
-  // argv[6] = ide_pid (reserved for future GUI IDE click-to-focus via NSRunningApplication(pid:))
+  var idePid   = parseInt(argv[6], 10) || 0;
 
   // Color map
   var r = 180/255, g = 0, b = 0;
@@ -31,9 +31,9 @@ function run(argv) {
   $.NSApplication.sharedApplication;
   $.NSApp.setActivationPolicy($.NSApplicationActivationPolicyAccessory);
 
-  // Register a click handler if we have a target bundle ID
+  // Register a click handler if we have a target bundle ID or IDE PID
   var clickHandler = null;
-  if (bundleId) {
+  if (bundleId || idePid > 0) {
     ObjC.registerSubclass({
       name: 'PeonClickHandler',
       superclass: 'NSObject',
@@ -41,15 +41,27 @@ function run(argv) {
         'handleClick': {
           types: ['void', []],
           implementation: function() {
-            var ws = $.NSWorkspace.sharedWorkspace;
-            var apps = ws.runningApplications;
-            var count = apps.count;
-            for (var i = 0; i < count; i++) {
-              var app = apps.objectAtIndex(i);
-              var bid = app.bundleIdentifier;
-              if (!bid.isNil() && bid.js === bundleId) {
-                app.activateWithOptions($.NSApplicationActivateIgnoringOtherApps);
-                break;
+            var activated = false;
+            // Primary: activate by bundle ID
+            if (bundleId) {
+              var ws = $.NSWorkspace.sharedWorkspace;
+              var apps = ws.runningApplications;
+              var count = apps.count;
+              for (var i = 0; i < count; i++) {
+                var app = apps.objectAtIndex(i);
+                var bid = app.bundleIdentifier;
+                if (!bid.isNil() && bid.js === bundleId) {
+                  app.activateWithOptions($.NSApplicationActivateIgnoringOtherApps);
+                  activated = true;
+                  break;
+                }
+              }
+            }
+            // Fallback: activate by IDE PID (for embedded terminals)
+            if (!activated && idePid > 0) {
+              var ideApp = $.NSRunningApplication.runningApplicationWithProcessIdentifier(idePid);
+              if (ideApp && !ideApp.isNil()) {
+                ideApp.activateWithOptions($.NSApplicationActivateIgnoringOtherApps);
               }
             }
             $.NSApp.terminate(null);

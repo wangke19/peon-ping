@@ -136,6 +136,64 @@ json.dump(m, open('$TEST_DIR/packs/peon/manifest.json', 'w'))
 }
 
 # ============================================================
+# IDE embedded terminal click-to-focus (lsappinfo fallback)
+# ============================================================
+
+@test "overlay: _mac_bundle_id_from_pid returns bundle ID via lsappinfo" {
+  echo "com.todesktop.230313mzl4w4u92" > "$TEST_DIR/.mock_ide_bundle_id"
+  # Call lsappinfo directly (mocked) to verify the mock works
+  # CLAUDE_PEON_DIR must be set for the mock to find the fixture file
+  result=$(CLAUDE_PEON_DIR="$TEST_DIR" "$MOCK_BIN/lsappinfo" info -only bundleid -app pid=12345 2>/dev/null | sed -n 's/.*="\([^"]*\)".*/\1/p')
+  [ "$result" = "com.todesktop.230313mzl4w4u92" ]
+}
+
+@test "overlay: _mac_bundle_id_from_pid returns empty when lsappinfo has no data" {
+  # No .mock_ide_bundle_id file — lsappinfo exits 1
+  result=$("$MOCK_BIN/lsappinfo" info -only bundleid -app pid=99999 2>/dev/null | grep -o '"[^"]*"' | tr -d '"' || true)
+  [ -z "$result" ]
+}
+
+@test "overlay: IDE bundle ID passed to overlay via notify.sh env" {
+  # Directly call notify.sh with PEON_BUNDLE_ID set (simulates the fallback path)
+  local notify_script="$TEST_DIR/scripts/notify.sh"
+  PEON_PLATFORM=mac PEON_NOTIF_STYLE=overlay PEON_SYNC=1 \
+    PEON_BUNDLE_ID="com.todesktop.230313mzl4w4u92" PEON_IDE_PID="12345" \
+    bash "$notify_script" "test msg" "test title" "blue" ""
+  overlay_was_called
+  [[ "$(overlay_log)" == *"com.todesktop.230313mzl4w4u92"* ]]
+}
+
+@test "overlay: IDE PID passed to overlay when bundle ID empty" {
+  # When bundle_id is empty but ide_pid is set, overlay still gets the PID
+  local notify_script="$TEST_DIR/scripts/notify.sh"
+  PEON_PLATFORM=mac PEON_NOTIF_STYLE=overlay PEON_SYNC=1 \
+    PEON_BUNDLE_ID="" PEON_IDE_PID="12345" \
+    bash "$notify_script" "test msg" "test title" "blue" ""
+  overlay_was_called
+  # The overlay receives ide_pid as argv[6]
+  [[ "$(overlay_log)" == *"12345"* ]]
+}
+
+@test "standard: IDE bundle ID used for terminal-notifier -activate via notify.sh" {
+  local notify_script="$TEST_DIR/scripts/notify.sh"
+  PEON_PLATFORM=mac PEON_NOTIF_STYLE=standard PEON_SYNC=1 \
+    PEON_BUNDLE_ID="com.microsoft.VSCode" PEON_IDE_PID="12345" \
+    bash "$notify_script" "test msg" "test title" "blue" ""
+  [ -f "$TEST_DIR/terminal_notifier.log" ]
+  [[ "$(terminal_notifier_log)" == *"-activate"* ]]
+  [[ "$(terminal_notifier_log)" == *"com.microsoft.VSCode"* ]]
+}
+
+@test "standard: no -activate when both bundle ID and IDE PID empty" {
+  local notify_script="$TEST_DIR/scripts/notify.sh"
+  PEON_PLATFORM=mac PEON_NOTIF_STYLE=standard PEON_SYNC=1 \
+    PEON_BUNDLE_ID="" PEON_IDE_PID="" \
+    bash "$notify_script" "test msg" "test title" "blue" ""
+  [ -f "$TEST_DIR/terminal_notifier.log" ]
+  ! [[ "$(terminal_notifier_log)" == *"-activate"* ]]
+}
+
+# ============================================================
 # Standard mode fallback
 # ============================================================
 

@@ -298,6 +298,16 @@ _mac_ide_pid() {
   echo "$_ide_pid"
 }
 
+# --- Derive bundle ID from a running process PID (macOS) ---
+# Uses lsappinfo (macOS built-in) to look up the bundle identifier of a
+# running application by its PID. Returns empty string on failure.
+_mac_bundle_id_from_pid() {
+  local pid="$1"
+  [ -z "$pid" ] || [ "$pid" = "0" ] && return
+  lsappinfo info -only bundleid -app pid="$pid" 2>/dev/null \
+    | sed -n 's/.*="\([^"]*\)".*/\1/p'
+}
+
 # --- Platform-aware notification ---
 # Args: msg, title, color (red/blue/yellow)
 send_notification() {
@@ -324,6 +334,11 @@ send_notification() {
       if [ "$PLATFORM" = "mac" ]; then
         export PEON_BUNDLE_ID="$(_mac_terminal_bundle_id)"
         export PEON_IDE_PID="$(_mac_ide_pid)"
+        # Fallback: if no terminal bundle ID but we found an IDE ancestor,
+        # derive the bundle ID from the IDE PID (for embedded terminals like Cursor)
+        if [ -z "$PEON_BUNDLE_ID" ] && [ "${PEON_IDE_PID:-0}" != "0" ]; then
+          PEON_BUNDLE_ID="$(_mac_bundle_id_from_pid "$PEON_IDE_PID")"
+        fi
       fi
       bash "$notify_script" "$msg" "$title" "$color" "$icon_path"
       ;;

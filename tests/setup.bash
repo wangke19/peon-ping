@@ -144,6 +144,27 @@ echo "$@" >> "${CLAUDE_PEON_DIR}/terminal_notifier.log"
 SCRIPT
   chmod +x "$MOCK_BIN/terminal-notifier"
 
+  # Mock lsappinfo — returns a bundle ID for a given PID (IDE click-to-focus)
+  cat > "$MOCK_BIN/lsappinfo" <<'SCRIPT'
+#!/bin/bash
+# Parse -app pid=<PID> to extract the requested PID
+for arg in "$@"; do
+  case "$arg" in
+    pid=*)
+      _pid="${arg#pid=}"
+      # Return mock bundle IDs for known test PIDs
+      if [ -f "${CLAUDE_PEON_DIR}/.mock_ide_bundle_id" ]; then
+        bid=$(cat "${CLAUDE_PEON_DIR}/.mock_ide_bundle_id")
+        echo "\"bundleid\"=\"$bid\""
+        exit 0
+      fi
+      ;;
+  esac
+done
+exit 1
+SCRIPT
+  chmod +x "$MOCK_BIN/lsappinfo"
+
   # Mock osascript — log calls instead of running AppleScript/JXA
   cat > "$MOCK_BIN/osascript" <<'SCRIPT'
 #!/bin/bash

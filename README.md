@@ -399,7 +399,7 @@ A filesystem watcher adapter for [Amp](https://ampcode.com) (by Sourcegraph). Am
 
 **How it works:**
 
-The adapter watches `~/.local/share/amp/threads/` for JSON file changes. When a thread file stops updating (5s idle timeout) and the last message is from the assistant with text content (not a pending tool call), it emits a `Stop` event — meaning the agent is done and waiting for your input.
+The adapter watches `~/.local/share/amp/threads/` for JSON file changes. When a thread file stops updating (1s idle timeout) and the last message is from the assistant with text content (not a pending tool call), it emits a `Stop` event — meaning the agent is done and waiting for your input.
 
 **Environment variables:**
 
@@ -407,7 +407,7 @@ The adapter watches `~/.local/share/amp/threads/` for JSON file changes. When a 
 |---|---|---|
 | `AMP_DATA_DIR` | `~/.local/share/amp` | Amp data directory |
 | `AMP_THREADS_DIR` | `$AMP_DATA_DIR/threads` | Threads directory to watch |
-| `AMP_IDLE_SECONDS` | `5` | Seconds of no changes before emitting Stop |
+| `AMP_IDLE_SECONDS` | `1` | Seconds of no changes before emitting Stop |
 | `AMP_STOP_COOLDOWN` | `10` | Minimum seconds between Stop events per thread |
 
 ### GitHub Copilot setup

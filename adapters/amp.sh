@@ -21,7 +21,7 @@ set -euo pipefail
 PEON_DIR="${CLAUDE_PEON_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/peon-ping}"
 AMP_DATA_DIR="${AMP_DATA_DIR:-$HOME/.local/share/amp}"
 THREADS_DIR="${AMP_THREADS_DIR:-$AMP_DATA_DIR/threads}"
-IDLE_SECONDS="${AMP_IDLE_SECONDS:-5}"  # seconds of no changes before emitting Stop
+IDLE_SECONDS="${AMP_IDLE_SECONDS:-1}"  # seconds of no changes before emitting Stop
 STOP_COOLDOWN="${AMP_STOP_COOLDOWN:-10}"  # minimum seconds between Stop events per thread
 
 # --- Colors ---
@@ -242,10 +242,10 @@ info "Idle timeout: ${IDLE_SECONDS}s"
 info "Press Ctrl+C to stop."
 echo ""
 
-# Start idle checker in background (runs every 2 seconds)
+# Start idle checker in background (runs every second)
 (
   while true; do
-    sleep 2
+    sleep 1
     check_idle_threads
   done
 ) &

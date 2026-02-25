@@ -1907,8 +1907,8 @@ Commands:
   status               Check if paused or active
   volume [0.0-1.0]     Get or set volume level
   rotation [mode]      Get or set pack rotation mode (random|round-robin|session_override)
-  notifications on        Enable desktop notifications
-  notifications off       Disable desktop notifications
+  notifications on        Enable desktop notification popups (sounds continue playing)
+  notifications off       Disable desktop notification popups (sounds continue playing)
   notifications overlay   Use large overlay banners (default)
   notifications standard  Use standard system notifications
   notifications test      Send a test notification

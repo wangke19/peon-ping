@@ -792,12 +792,14 @@ case "${1:-}" in
     # Run headphone detection in bash before Python
     _headphones_detected=true
     detect_headphones || _headphones_detected=false
+    _verbose_flag="${2:-}"
     python3 -c "
-import json, os
+import json, os, sys
 
 config_path = os.environ.get('PEON_ENV_CONFIG', '')
 peon_dir = os.environ.get('PEON_ENV_PEON_DIR', '')
 headphones_detected = '$_headphones_detected' == 'true'
+verbose = '$_verbose_flag' == '--verbose'
 
 # --- Config ---
 try:
@@ -806,7 +808,11 @@ except Exception:
     c = {}
 
 dn = c.get('desktop_notifications', True)
-print('peon-ping: desktop notifications ' + ('on' if dn else 'off'))
+if verbose:
+    dn_status = 'on' if dn else 'off (sounds still play)'
+    print('peon-ping: desktop notifications ' + dn_status)
+else:
+    print('peon-ping: desktop notifications ' + ('on' if dn else 'off'))
 ns = c.get('notification_style', 'overlay')
 print('peon-ping: notification style ' + ns)
 
@@ -814,7 +820,11 @@ mn = c.get('mobile_notify', {})
 if mn and mn.get('service'):
     enabled = mn.get('enabled', True)
     svc = mn.get('service', '?')
-    print(f'peon-ping: mobile notifications ' + ('on' if enabled else 'off') + f' ({svc})')
+    if verbose:
+        mobile_status = 'on' if enabled else 'off'
+        print(f'peon-ping: mobile notifications {mobile_status} ({svc})')
+    else:
+        print(f'peon-ping: mobile notifications ' + ('on' if enabled else 'off') + f' ({svc})')
 else:
     print('peon-ping: mobile notifications not configured')
 

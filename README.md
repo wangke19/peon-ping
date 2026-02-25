@@ -267,6 +267,44 @@ Config location depends on install mode:
 - **headphones_only** (boolean, default: `false`): Only play sounds when headphones or external audio devices are detected. When enabled, sounds are suppressed if built-in speakers are the active output — useful for open offices. Check status with `peon status`. Supported on macOS (via `system_profiler`) and Linux (via PipeWire `wpctl` or PulseAudio `pactl`).
 - **suppress_sound_when_tab_focused** (boolean, default: `false`): Skip sound playback when the terminal tab that generated the hook event is the currently active/focused tab. Sounds still play for background tabs as an alert that something happened elsewhere. Desktop and mobile notifications are unaffected. Useful when you only want audio cues from tabs you're not watching. macOS only (uses `osascript` to check frontmost app and iTerm2 tab focus).
 
+## Common Use Cases
+
+### Sounds without popups
+
+Want voice feedback but no visual distractions?
+
+```bash
+peon notifications off
+```
+
+This keeps all sound categories playing while suppressing desktop notification banners. Mobile notifications (if configured) continue working.
+
+You can also use the alias:
+
+```bash
+peon popups off
+```
+
+### Silent mode with notifications only
+
+Want visual alerts but no audio?
+
+```bash
+peon pause  # or set "enabled": false in config
+```
+
+With `desktop_notifications: true`, you'll get popups but no sounds.
+
+### Complete silence
+
+Disable everything:
+
+```bash
+peon pause
+peon notifications off
+peon mobile off
+```
+
 ## Peon Trainer
 
 Your peon is also your personal trainer. Built-in Pavel-style daily exercise mode — the same orc who tells you "work work" now tells you to drop and give him twenty.

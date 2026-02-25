@@ -996,6 +996,39 @@ print('NOTIF_STYLE=' + q(ns))
       *)
         echo "Usage: peon notifications <on|off|overlay|standard|test>" >&2; exit 1 ;;
     esac ;;
+  popups)
+    # Alias for 'notifications' command - same behavior
+    case "${2:-}" in
+      on)
+        python3 -c "
+import json, os
+config_path = os.environ.get('PEON_ENV_CONFIG', '')
+try:
+    cfg = json.load(open(config_path))
+except Exception:
+    cfg = {}
+cfg['desktop_notifications'] = True
+json.dump(cfg, open(config_path, 'w'), indent=2)
+print('peon-ping: desktop notifications on')
+"
+        sync_adapter_configs; exit 0 ;;
+      off)
+        python3 -c "
+import json, os
+config_path = os.environ.get('PEON_ENV_CONFIG', '')
+try:
+    cfg = json.load(open(config_path))
+except Exception:
+    cfg = {}
+cfg['desktop_notifications'] = False
+json.dump(cfg, open(config_path, 'w'), indent=2)
+print('peon-ping: desktop notifications off')
+"
+        sync_adapter_configs; exit 0 ;;
+      *)
+        echo "Usage: peon popups on|off" >&2
+        exit 1 ;;
+    esac ;;
   volume)
     VOL_ARG="${2:-}"
     if [ -z "$VOL_ARG" ]; then
@@ -1912,6 +1945,7 @@ Commands:
   notifications overlay   Use large overlay banners (default)
   notifications standard  Use standard system notifications
   notifications test      Send a test notification
+  popups on|off         Alias for 'notifications' - toggle desktop notification popups
   preview [category]   Play all sounds from a category (default: session.start)
   preview --list       List all categories and sound counts in the active pack
                        Categories: session.start, task.acknowledge, task.complete,

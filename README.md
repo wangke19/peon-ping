@@ -240,8 +240,23 @@ Config location depends on install mode:
 }
 ```
 
+### Independent Controls
+
+peon-ping has three independent controls that can be mixed and matched:
+
+| Config Key | Controls | Affects Sounds | Affects Desktop Popups | Affects Mobile Push |
+|------------|----------|----------------|------------------------|---------------------|
+| `enabled` | Master audio switch | ✅ Yes | ❌ No | ❌ No |
+| `desktop_notifications` | Desktop popup banners | ❌ No | ✅ Yes | ❌ No |
+| `mobile_notify.enabled` | Phone push notifications | ❌ No | ❌ No | ✅ Yes |
+
+This means you can:
+- Keep sounds but disable desktop popups: `peon notifications off`
+- Keep desktop popups but disable sounds: `peon pause`
+- Enable mobile push without desktop popups: set `desktop_notifications: false` and `mobile_notify.enabled: true`
+
 - **volume**: 0.0–1.0 (quiet enough for the office)
-- **desktop_notifications**: `true`/`false` — toggle desktop notification popups independently from sounds (default: `true`)
+- **desktop_notifications**: `true`/`false` — toggle desktop notification popups independently from sounds (default: `true`). When disabled, sounds continue playing but visual popups are suppressed. Mobile notifications are unaffected.
 - **notification_style**: `"overlay"` or `"standard"` — controls how desktop notifications appear (default: `"overlay"`)
   - **overlay**: large, visible banners — JXA Cocoa overlay on macOS, Windows Forms popup on WSL/MSYS2. Clicking the overlay focuses your terminal (supports Ghostty, Warp, iTerm2, Zed, Terminal.app). On iTerm2, clicking focuses the correct tab/pane/window — not just the app.
   - **standard**: system notifications — [`terminal-notifier`](https://github.com/julienXX/terminal-notifier) / `osascript` on macOS, Windows toast on WSL/MSYS2. When `terminal-notifier` is installed (`brew install terminal-notifier`), clicking a standard notification focuses your terminal automatically (supports Ghostty, Warp, iTerm2, Zed, Terminal.app)
